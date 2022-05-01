@@ -15,7 +15,7 @@ Current shortcuts:
  - Ctrl S, save file
  - Ctrl Q, exit without saving
  - Ctrl R, (not working properly yet and is only meant for VDE.v) save, compile, run the new VDE file, and close the old instance.
- - Ctrl [/], switch between files in directory
+ - Ctrl [ or ], switch between files in directory
 
 To do:
 - Alpha:
