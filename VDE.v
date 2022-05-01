@@ -11,7 +11,7 @@ import v.token
 import v.scanner
 
 const (
-    key_map = {32:" ", 39:"\"", 44:"<", 45:"_", 46:">", 47:"?", 49:"!", 50:"@", 51:"#", 52:"$", 53:"%", 54:"^", 55:"&", 56:"*", 57:"(", 48:")", 59:":", 61:"+", 91:"{", 92:"|", 93:"}", 96:"~"}
+    key_map = {32:" ", 39:"\"\"", 44:"<", 45:"_", 46:">", 47:"?", 49:"!", 50:"@", 51:"#", 52:"$", 53:"%", 54:"^", 55:"&", 56:"*", 57:"(", 48:")", 59:":", 61:"+", 91:"{", 92:"|", 93:"}", 96:"~"}
 )
 
 [heap]
@@ -80,6 +80,119 @@ fn (file File) save(){
     file_obj.close()
 }
 
+fn token_matcher(mut line &Line, token &token.Token, line_nr int){
+    match token.kind {
+        .comment {
+            line.tkns << KeyWord{
+                str:    "//" + token.lit.substr(1, token.lit.len)
+                pos:    [token.col - 1, line_nr]
+                color:  gx.rgb(0, 50, 50)
+            }
+        }
+        .key_as {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:      gx.rgb(255, 0, 255)
+            }
+        }
+        .key_fn {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:      gx.rgb(255, 255, 128)
+            }
+        }
+        .key_import {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:      gx.rgb(255, 0, 255)
+            }
+        }
+        .key_struct {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:  gx.rgb(100, 100, 100)
+            }
+        }
+        .name {
+            if token.lit == "bool" {
+                line.tkns << KeyWord{
+                    str:    token.lit
+                    pos:    [token.col - 1, line_nr]
+                    color:      gx.rgb(0, 0, 255)
+                }
+                return
+            }
+            if token.lit in ["i8", "i16","int", "i64"] {
+                line.tkns << KeyWord{
+                    str:    token.lit
+                    pos:    [token.col - 1, line_nr]
+                    color:      gx.rgb(50, 100, 255)
+                }
+                return
+            }
+            if token.lit in ["u8", "u16","u32", "u64"] {
+                line.tkns << KeyWord{
+                    str:    token.lit
+                    pos:    [token.col - 1, line_nr]
+                    color:      gx.rgb(0, 150, 255)
+                }
+                return
+            }
+            if token.lit in ["f32", "f64"] {
+                line.tkns << KeyWord{
+                    str:    token.lit
+                    pos:    [token.col - 1, line_nr]
+                    color:      gx.rgb(0, 200, 255)
+                }
+                return
+            }
+            if token.lit == "string" {
+                line.tkns << KeyWord{
+                    str:    token.lit
+                    pos:    [token.col - 1, line_nr]
+                    color:      gx.rgb(0, 200, 100)
+                }
+                return
+            }
+            if token.lit == "rune" {
+                line.tkns << KeyWord{
+                    str:    token.lit
+                    pos:    [token.col - 1, line_nr]
+                    color:      gx.rgb(0, 150, 50)
+                }
+                return
+            }
+            if token.lit == "voidptr" {
+                line.tkns << KeyWord{
+                    str:    token.lit
+                    pos:    [token.col - 1, line_nr]
+                    color:      gx.rgb(100, 0, 0)
+                }
+                return
+            }
+        }
+        .number {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:  gx.rgb(175, 255, 225)
+            }
+        }
+        .string {
+            line.tkns << KeyWord{
+                str:    "\"" + token.lit + "\""
+                pos:    [token.col - 1, line_nr]
+                color:  gx.rgb(255, 175, 75)
+            }
+        }
+        else {}
+    }
+}
+
 fn (mut app App) scan_files(){
     mut indexer := 0
     mut file_path := ""
@@ -123,109 +236,7 @@ fn (mut app App) scan_files(){
                     }
                 }
                 for token in scanner.new_scanner(app.files_in_dir[app.files_in_dir.len - 1].contents[line].base, scanner.CommentsMode.parse_comments, pref.new_preferences()).all_tokens{
-                    match token.kind {
-                        .key_as {
-                            app.files_in_dir[app.files_in_dir.len - 1].contents[line].tkns << KeyWord{
-                                str:    token.lit
-                                pos:    [token.col - 1, line]
-                                color:      gx.rgb(255, 0, 255)
-                            }
-                        }
-                        .key_fn {
-                            app.files_in_dir[app.files_in_dir.len - 1].contents[line].tkns << KeyWord{
-                                str:    token.lit
-                                pos:    [token.col - 1, line]
-                                color:      gx.rgb(255, 255, 128)
-                            }
-                        }
-                        .key_import {
-                            app.files_in_dir[app.files_in_dir.len - 1].contents[line].tkns << KeyWord{
-                                str:    token.lit
-                                pos:    [token.col - 1, line]
-                                color:      gx.rgb(255, 0, 255)
-                            }
-                        }
-                        .key_struct {
-                            app.files_in_dir[app.files_in_dir.len - 1].contents[line].tkns << KeyWord{
-                                str:    token.lit
-                                pos:    [token.col - 1, line]
-                                color:  gx.rgb(100, 100, 100)
-                            }
-                        }
-                        .name {
-                            if token.lit == "bool" {
-                                app.files_in_dir[app.files_in_dir.len - 1].contents[line].tkns << KeyWord{
-                                    str:    token.lit
-                                    pos:    [token.col - 1, line]
-                                    color:      gx.rgb(0, 0, 255)
-                                }
-                                continue
-                            }
-                            if token.lit in ["i8", "i16","int", "i64"] {
-                                app.files_in_dir[app.files_in_dir.len - 1].contents[line].tkns << KeyWord{
-                                    str:    token.lit
-                                    pos:    [token.col - 1, line]
-                                    color:      gx.rgb(50, 100, 255)
-                                }
-                                continue
-                            }
-                            if token.lit in ["u8", "u16","u32", "u64"] {
-                                app.files_in_dir[app.files_in_dir.len - 1].contents[line].tkns << KeyWord{
-                                    str:    token.lit
-                                    pos:    [token.col - 1, line]
-                                    color:      gx.rgb(0, 150, 255)
-                                }
-                                continue
-                            }
-                            if token.lit in ["f32", "f64"] {
-                                app.files_in_dir[app.files_in_dir.len - 1].contents[line].tkns << KeyWord{
-                                    str:    token.lit
-                                    pos:    [token.col - 1, line]
-                                    color:      gx.rgb(0, 200, 255)
-                                }
-                                continue
-                            }
-                            if token.lit == "string" {
-                                app.files_in_dir[app.files_in_dir.len - 1].contents[line].tkns << KeyWord{
-                                    str:    token.lit
-                                    pos:    [token.col - 1, line]
-                                    color:      gx.rgb(0, 200, 100)
-                                }
-                                continue
-                            }
-                            if token.lit == "rune" {
-                                app.files_in_dir[app.files_in_dir.len - 1].contents[line].tkns << KeyWord{
-                                    str:    token.lit
-                                    pos:    [token.col - 1, line]
-                                    color:      gx.rgb(0, 150, 50)
-                                }
-                                continue
-                            }
-                            if token.lit == "voidptr" {
-                                app.files_in_dir[app.files_in_dir.len - 1].contents[line].tkns << KeyWord{
-                                    str:    token.lit
-                                    pos:    [token.col - 1, line]
-                                    color:      gx.rgb(100, 0, 0)
-                                }
-                                continue
-                            }
-                        }
-                        .number {
-                            app.files_in_dir[app.files_in_dir.len - 1].contents[line].tkns << KeyWord{
-                                str:    token.lit
-                                pos:    [token.col - 1, line]
-                                color:  gx.rgb(175, 255, 225)
-                            }
-                        }
-                        .string {
-                            app.files_in_dir[app.files_in_dir.len - 1].contents[line].tkns << KeyWord{
-                                str:    "\"" + token.lit + "\""
-                                pos:    [token.col - 1, line]
-                                color:  gx.rgb(255, 175, 75)
-                            }
-                        }
-                        else {}
-                    }
+                    token_matcher(mut app.files_in_dir[app.files_in_dir.len - 1].contents[line], token, line)
                 }
                 indexer = 0
             }
@@ -255,109 +266,7 @@ fn (mut line Line) scan_line(line_nr int) int {
         check_only: true
     }
     for token in scanner.new_scanner(line.base, scanner.CommentsMode.parse_comments, cfg).all_tokens{
-        match token.kind {
-            .key_as {
-                line.tkns << KeyWord{
-                    str:    token.lit
-                    pos:    [token.col - 1, line_nr]
-                    color:      gx.rgb(255, 0, 255)
-                }
-            }
-            .key_fn {
-                line.tkns << KeyWord{
-                    str:    token.lit
-                    pos:    [token.col - 1, line_nr]
-                    color:      gx.rgb(255, 255, 128)
-                }
-            }
-            .key_import {
-                line.tkns << KeyWord{
-                    str:    token.lit
-                    pos:    [token.col - 1, line_nr]
-                    color:      gx.rgb(255, 0, 255)
-                }
-            }
-            .key_struct {
-                line.tkns << KeyWord{
-                    str:    token.lit
-                    pos:    [token.col - 1, line_nr]
-                    color:  gx.rgb(100, 100, 100)
-                }
-            }
-            .name {
-                if token.lit == "bool" {
-                    line.tkns << KeyWord{
-                        str:    token.lit
-                        pos:    [token.col - 1, line_nr]
-                        color:      gx.rgb(0, 0, 255)
-                    }
-                    continue
-                }
-                if token.lit in ["i8", "i16","int", "i64"] {
-                    line.tkns << KeyWord{
-                        str:    token.lit
-                        pos:    [token.col - 1, line_nr]
-                        color:      gx.rgb(50, 100, 255)
-                    }
-                    continue
-                }
-                if token.lit in ["u8", "u16","u32", "u64"] {
-                    line.tkns << KeyWord{
-                        str:    token.lit
-                        pos:    [token.col - 1, line_nr]
-                        color:      gx.rgb(0, 150, 255)
-                    }
-                    continue
-                }
-                if token.lit in ["f32", "f64"] {
-                    line.tkns << KeyWord{
-                        str:    token.lit
-                        pos:    [token.col - 1, line_nr]
-                        color:      gx.rgb(0, 200, 255)
-                    }
-                    continue
-                }
-                if token.lit == "string" {
-                    line.tkns << KeyWord{
-                        str:    token.lit
-                        pos:    [token.col - 1, line_nr]
-                        color:      gx.rgb(0, 200, 100)
-                    }
-                    continue
-                }
-                if token.lit == "rune" {
-                    line.tkns << KeyWord{
-                        str:    token.lit
-                        pos:    [token.col - 1, line_nr]
-                        color:      gx.rgb(0, 150, 50)
-                    }
-                    continue
-                }
-                if token.lit == "voidptr" {
-                    line.tkns << KeyWord{
-                        str:    token.lit
-                        pos:    [token.col - 1, line_nr]
-                        color:      gx.rgb(100, 0, 0)
-                    }
-                    continue
-                }
-            }
-            .number {
-                line.tkns << KeyWord{
-                    str:    token.lit
-                    pos:    [token.col - 1, line_nr]
-                    color:  gx.rgb(175, 255, 225)
-                }
-            }
-            .string {
-                line.tkns << KeyWord{
-                    str:    "\"" + token.lit + "\""
-                    pos:    [token.col - 1, line_nr]
-                    color:  gx.rgb(255, 175, 75)
-                }
-            }
-            else {}
-        }
+        token_matcher(mut line, token, line_nr)
     }
     return return_val
 }
@@ -398,6 +307,7 @@ fn click(x f32, y f32, button gg.MouseButton, mut app &App){
 }
 
 fn kb_down(key gg.KeyCode, mod gg.Modifier, mut app &App){
+    mut stop := 0
     if (!app.shift_down) && ((key == gg.KeyCode.left_shift) || (key == gg.KeyCode.right_shift)) {
         app.shift_down = true
     }
@@ -537,8 +447,12 @@ fn kb_down(key gg.KeyCode, mod gg.Modifier, mut app &App){
                 app.current_file.contents.delete(app.current_file.edit[1])
                 app.current_file.edit[1]--
                 app.current_file.edit[0] = app.current_file.contents[app.current_file.edit[1]].base.len
-				println(app.current_file.ystart)
-				for line in app.current_file.ystart .. int(gg.window_size().height/30) - 2 {
+				if app.current_file.contents.len < int(gg.window_size().height/30) {
+                    stop = app.current_file.contents.len
+                } else {
+                    stop = int(gg.window_size().height/30)
+                }
+				for line in app.current_file.ystart .. stop {
 					app.current_file.contents[line].scan_line(line)
 				}
             }
@@ -556,9 +470,14 @@ fn kb_down(key gg.KeyCode, mod gg.Modifier, mut app &App){
             app.current_file.edit[0] = 0
             app.current_file.edit[1]++
         }
-        for line in app.current_file.ystart .. (gg.window_size().height/30) + 1 {
-			app.current_file.contents[line].scan_line(line)
-		}
+        if app.current_file.contents.len < int(gg.window_size().height/30) {
+            stop = app.current_file.contents.len
+        } else {
+            stop = int(gg.window_size().height/30)
+        }
+        for line in app.current_file.ystart .. stop {
+            app.current_file.contents[line].scan_line(line)
+        }
     }
 }
 
