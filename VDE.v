@@ -84,10 +84,11 @@ fn token_matcher(mut line &Line, token &token.Token, line_nr int){
     match token.kind {
         .comment {
             line.tkns << KeyWord{
-                str:    "//" + token.lit.substr(1, token.lit.len)
-                pos:    [token.col - 1, line_nr]
+                str:    "//" + " ".repeat(int(token.pos > 1)) + token.lit.substr(int(token.lit.len != 0), token.lit.len)
+                pos:    [line.base.index("//") or {0}, line_nr]
                 color:  gx.rgb(0, 50, 50)
             }
+            println(token.col)
         }
         .key_as {
             line.tkns << KeyWord{
@@ -266,6 +267,7 @@ fn (mut line Line) scan_line(line_nr int) int {
         check_only: true
     }
     for token in scanner.new_scanner(line.base, scanner.CommentsMode.parse_comments, cfg).all_tokens{
+        println(token.col)
         token_matcher(mut line, token, line_nr)
     }
     return return_val
@@ -326,9 +328,14 @@ fn kb_down(key gg.KeyCode, mod gg.Modifier, mut app &App){
             return
         }
         app.current_file.ystart += int(yscroll)
-		for line in app.current_file.ystart .. (gg.window_size().height/30) + 1 {
-			app.current_file.contents[line].scan_line(line)
-		}
+        if app.current_file.contents.len < int(gg.window_size().height/30) {
+            stop = app.current_file.contents.len
+        } else {
+            stop = int(gg.window_size().height/30)
+        }
+		for line in app.current_file.ystart .. stop {
+            app.current_file.contents[line].scan_line(line)
+        }
     }
     if key == gg.KeyCode.page_up{
         yscroll := -10
@@ -345,9 +352,14 @@ fn kb_down(key gg.KeyCode, mod gg.Modifier, mut app &App){
             return
         }
         app.current_file.ystart += int(yscroll)
-		for line in app.current_file.ystart .. (gg.window_size().height/30) + 1 {
-			app.current_file.contents[line].scan_line(line)
-		}
+        if app.current_file.contents.len < int(gg.window_size().height/30) {
+            stop = app.current_file.contents.len
+        } else {
+            stop = int(gg.window_size().height/30)
+        }
+		for line in app.current_file.ystart .. stop {
+            app.current_file.contents[line].scan_line(line)
+        }
     }
     if key == gg.KeyCode.right {
         for tab in 0 .. app.current_file.contents[app.current_file.edit[1]].tabs.len {
