@@ -23,8 +23,8 @@ To do:
   - [x] Highlighting for primatives
   - [ ] Highlighting for keywords (partial)
   - [ ] More efficient rendering
-  - [ ] Horizontal scroll capping
-  - [ ] Text cursor following
+  - [x] Horizontal scroll capping
+  - [x] Text cursor following
   - [ ] Text highlighting
   - [ ] Copy/Paste
   - [ ] Add bottom bar for save state and row+col info
