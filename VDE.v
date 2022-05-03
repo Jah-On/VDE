@@ -24,6 +24,7 @@ mut:
     open_files      []File
     current_file    &File = 0
     shift_down      bool
+    in_render       bool
 }
 
 [heap]
@@ -35,6 +36,7 @@ mut:
     alt         string
     ystart      int
     xshift      int
+    xmax        int
     edit        []int = [0,0]
     read_only   bool
     ref_files   []File
@@ -88,7 +90,6 @@ fn token_matcher(mut line &Line, token &token.Token, line_nr int){
                 pos:    [line.base.index("//") or {0}, line_nr]
                 color:  gx.rgb(0, 50, 50)
             }
-            println(token.col)
         }
         .key_as {
             line.tkns << KeyWord{
@@ -185,7 +186,7 @@ fn token_matcher(mut line &Line, token &token.Token, line_nr int){
         }
         .string {
             line.tkns << KeyWord{
-                str:    "\"" + token.lit + "\""
+                str:    line.base.substr(token.col - 1, token.col) + token.lit + line.base.substr(token.col - 1, token.col)
                 pos:    [token.col - 1, line_nr]
                 color:  gx.rgb(255, 175, 75)
             }
@@ -223,6 +224,9 @@ fn (mut app App) scan_files(){
             for line in 0 .. file_data.len {
                 app.files_in_dir[app.files_in_dir.len - 1].contents << Line{
                     base: file_data[line]
+                }
+                if app.files_in_dir[app.files_in_dir.len - 1].contents[line].base.len > app.files_in_dir[app.files_in_dir.len - 1].xmax {
+                    app.files_in_dir[app.files_in_dir.len - 1].xmax = app.files_in_dir[app.files_in_dir.len - 1].contents[line].base.len
                 }
                 for {
                     if indexer >= app.files_in_dir[app.files_in_dir.len - 1].contents[line].base.len{
@@ -267,7 +271,6 @@ fn (mut line Line) scan_line(line_nr int) int {
         check_only: true
     }
     for token in scanner.new_scanner(line.base, scanner.CommentsMode.parse_comments, cfg).all_tokens{
-        println(token.col)
         token_matcher(mut line, token, line_nr)
     }
     return return_val
@@ -289,12 +292,23 @@ fn main(){
         keydown_fn: kb_down
         scroll_fn: scroll
         click_fn: click
-        swap_interval: 2
         // ui_mode: true
     )
     app.scan_files()
     app.current_file = &app.files_in_dir[0]
     app.ctx.run()
+}
+
+fn (mut file File) recalc_visible() {
+    mut stop := 0
+    if file.contents.len < int(gg.window_size().height/30) {
+        stop = file.contents.len
+    } else {
+        stop = int(gg.window_size().height/30)
+    }
+    for line in file.ystart .. stop {
+        file.contents[line].scan_line(line)
+    }
 }
 
 fn click(x f32, y f32, button gg.MouseButton, mut app &App){
@@ -309,101 +323,106 @@ fn click(x f32, y f32, button gg.MouseButton, mut app &App){
 }
 
 fn kb_down(key gg.KeyCode, mod gg.Modifier, mut app &App){
-    mut stop := 0
-    if (!app.shift_down) && ((key == gg.KeyCode.left_shift) || (key == gg.KeyCode.right_shift)) {
-        app.shift_down = true
-    }
-    if key == gg.KeyCode.page_down{
-        yscroll := 10
-        if app.current_file.ystart + yscroll < 0{
-            app.current_file.ystart = 0
-            return
+    mut temp := 0
+    match mod {
+        .shift {}
+        .ctrl {
         }
-        if app.current_file.ystart + yscroll >= app.current_file.contents.len - int(gg.window_size().height/30) {
-            if app.current_file.contents.len - int(gg.window_size().height/30) < 0 {
-                app.current_file.ystart = 0
-                return
-            }
-            app.current_file.ystart = app.current_file.contents.len - int(gg.window_size().height/30)
-            return
-        }
-        app.current_file.ystart += int(yscroll)
-        if app.current_file.contents.len < int(gg.window_size().height/30) {
-            stop = app.current_file.contents.len
-        } else {
-            stop = int(gg.window_size().height/30)
-        }
-		for line in app.current_file.ystart .. stop {
-            app.current_file.contents[line].scan_line(line)
-        }
-    }
-    if key == gg.KeyCode.page_up{
-        yscroll := -10
-        if app.current_file.ystart + yscroll < 0{
-            app.current_file.ystart = 0
-            return
-        }
-        if app.current_file.ystart + yscroll >= app.current_file.contents.len - int(gg.window_size().height/30) {
-            if app.current_file.contents.len - int(gg.window_size().height/30) < 0 {
-                app.current_file.ystart = 0
-                return
-            }
-            app.current_file.ystart = app.current_file.contents.len - int(gg.window_size().height/30)
-            return
-        }
-        app.current_file.ystart += int(yscroll)
-        if app.current_file.contents.len < int(gg.window_size().height/30) {
-            stop = app.current_file.contents.len
-        } else {
-            stop = int(gg.window_size().height/30)
-        }
-		for line in app.current_file.ystart .. stop {
-            app.current_file.contents[line].scan_line(line)
-        }
-    }
-    if key == gg.KeyCode.right {
-        for tab in 0 .. app.current_file.contents[app.current_file.edit[1]].tabs.len {
-            if app.current_file.edit[0] == app.current_file.contents[app.current_file.edit[1]].tabs[tab][0] {
-                app.current_file.edit[0] = app.current_file.contents[app.current_file.edit[1]].tabs[tab][1]
-                return
-            }
-        }
-        if app.current_file.edit[0] >= app.current_file.contents[app.current_file.edit[1]].base.len {
-            if app.current_file.edit[1] + 1 <= app.current_file.contents.len - 1 {
-                app.current_file.edit = [0, app.current_file.edit[1] + 1]
-            }
-        } else {
-            app.current_file.edit[0]++
-        }
-    }
-    if key == gg.KeyCode.left {
-        for tab in 0 .. app.current_file.contents[app.current_file.edit[1]].tabs.len {
-            if app.current_file.edit[0] == app.current_file.contents[app.current_file.edit[1]].tabs[tab][1] {
-                app.current_file.edit[0] = app.current_file.contents[app.current_file.edit[1]].tabs[tab][0]
-                return
-            }
-        }
-        if app.current_file.edit[0] == 0 {
-            if app.current_file.edit[1] - 1 >= 0 {
-                app.current_file.edit = [app.current_file.contents[app.current_file.edit[1] - 1].base.len, app.current_file.edit[1] - 1]
-            }
-        } else {
-            app.current_file.edit[0]--
-        }
-    }
-    if key == gg.KeyCode.up {
-        if app.current_file.edit[1] > 0{
-            app.current_file.edit[1]--
-        } else {
-            app.current_file.edit[0] = 0
-        }
-        if app.current_file.edit[0] > app.current_file.contents[app.current_file.edit[1]].base.len {
-            app.current_file.edit[0] = app.current_file.contents[app.current_file.edit[1]].base.len
-        }
-        for tab in 0 .. app.current_file.contents[app.current_file.edit[1]].tabs.len {
-            if (app.current_file.edit[0] > app.current_file.contents[app.current_file.edit[1]].tabs[tab][0]) && (app.current_file.edit[0] < app.current_file.contents[app.current_file.edit[1]].tabs[tab][1]) {
-                app.current_file.edit[0] = app.current_file.contents[app.current_file.edit[1]].tabs[tab][int(app.current_file.edit[0] > 2)]
-                break
+        else {
+            match key {
+                .enter {
+                    if app.current_file.edit[0] == 0 {
+                        app.current_file.contents.insert(app.current_file.edit[1], Line{})
+                    } else if app.current_file.edit[0] == app.current_file.contents[app.current_file.edit[1]].base.len {
+                        app.current_file.contents.insert(app.current_file.edit[1] + 1, Line{})
+                        app.current_file.edit[0] = 0
+                        app.current_file.edit[1]++
+                    }
+                    app.current_file.recalc_visible()
+                }
+                .left {
+                    for tab in 0 .. app.current_file.contents[app.current_file.edit[1]].tabs.len {
+                        if app.current_file.edit[0] == app.current_file.contents[app.current_file.edit[1]].tabs[tab][1] {
+                            app.current_file.edit[0] = app.current_file.contents[app.current_file.edit[1]].tabs[tab][0]
+                            temp = 1
+                        }
+                    }
+                    if temp != 1 {
+                        if app.current_file.edit[0] == 0 {
+                            if app.current_file.edit[1] - 1 >= 0 {
+                                app.current_file.edit = [app.current_file.contents[app.current_file.edit[1] - 1].base.len, app.current_file.edit[1] - 1]
+                            }
+                        } else {
+                            app.current_file.edit[0]--
+                        }
+                    }
+                }
+                .left_shift {if !app.shift_down {app.shift_down = true}}
+                .page_down {
+                    if app.current_file.edit[1] + 50 < app.current_file.contents.len {
+                        app.current_file.edit[1] += 50
+                    } else {
+                        app.current_file.edit[1] = app.current_file.contents.len - 1
+                    }
+                    if app.current_file.edit[0] > app.current_file.contents[app.current_file.edit[1]].base.len {
+                        app.current_file.edit[0] = app.current_file.contents[app.current_file.edit[1]].base.len
+                    }
+                }
+                .page_up {
+                    if app.current_file.edit[1] - 50 >= 0 {
+                        app.current_file.edit[1] -= 50
+                    } else {
+                        app.current_file.edit[1] = 0
+                    }
+                    if app.current_file.edit[0] > app.current_file.contents[app.current_file.edit[1]].base.len {
+                        app.current_file.edit[0] = app.current_file.contents[app.current_file.edit[1]].base.len
+                    }
+                }
+                .right {
+                    for tab in 0 .. app.current_file.contents[app.current_file.edit[1]].tabs.len {
+                        if app.current_file.edit[0] == app.current_file.contents[app.current_file.edit[1]].tabs[tab][0] {
+                            app.current_file.edit[0] = app.current_file.contents[app.current_file.edit[1]].tabs[tab][1]
+                            temp = 1
+                        }
+                    }
+                    if temp != 1 {
+                        if app.current_file.edit[0] >= app.current_file.contents[app.current_file.edit[1]].base.len {
+                            if app.current_file.edit[1] + 1 <= app.current_file.contents.len - 1 {
+                                app.current_file.edit = [0, app.current_file.edit[1] + 1]
+                            }
+                        } else {
+                            app.current_file.edit[0]++
+                        }
+                    }
+                }
+                .right_shift {if !app.shift_down {app.shift_down = true}}
+                .tab {
+                    app.current_file.contents[app.current_file.edit[1]].base = app.current_file.contents[app.current_file.edit[1]].base.substr(0, app.current_file.edit[0]) + "\t" + app.current_file.contents[app.current_file.edit[1]].base.substr(app.current_file.edit[0], app.current_file.contents[app.current_file.edit[1]].base.len)
+                    app.current_file.edit[0] += app.current_file.contents[app.current_file.edit[1]].scan_line(app.current_file.edit[1])
+                }
+                .up {
+                    if app.current_file.edit[1] > 0{
+                        app.current_file.edit[1]--
+                    } else {
+                        app.current_file.edit[0] = 0
+                    }
+                    if app.current_file.edit[0] > app.current_file.contents[app.current_file.edit[1]].base.len {
+                        app.current_file.edit[0] = app.current_file.contents[app.current_file.edit[1]].base.len
+                    }
+                    for tab in 0 .. app.current_file.contents[app.current_file.edit[1]].tabs.len {
+                        if (app.current_file.edit[0] > app.current_file.contents[app.current_file.edit[1]].tabs[tab][0]) && (app.current_file.edit[0] < app.current_file.contents[app.current_file.edit[1]].tabs[tab][1]) {
+                            app.current_file.edit[0] = app.current_file.contents[app.current_file.edit[1]].tabs[tab][int(app.current_file.edit[0] > 2)]
+                            break
+                        }
+                    }
+                }
+                else {
+                    if (int(key) >= 32) && (int(key) <= 96) {
+                        app.current_file.contents[app.current_file.edit[1]].base = app.current_file.contents[app.current_file.edit[1]].base.substr(0, app.current_file.edit[0]) + u8(key).ascii_str().to_lower().repeat(1 + int(key == gg.KeyCode.apostrophe)) + app.current_file.contents[app.current_file.edit[1]].base.substr(app.current_file.edit[0], app.current_file.contents[app.current_file.edit[1]].base.len)
+                        app.current_file.contents[app.current_file.edit[1]].scan_line(app.current_file.edit[1])
+                        app.current_file.edit[0]++
+                    }
+                }
             }
         }
     }
@@ -422,19 +441,6 @@ fn kb_down(key gg.KeyCode, mod gg.Modifier, mut app &App){
                 break
             }
         }
-    }
-    if (int(key) >= 32) && (int(key) <= 96) && (mod != gg.Modifier.ctrl) && (mod != gg.Modifier.alt) && (mod != gg.Modifier.super) {
-        if mod == gg.Modifier.shift {
-            if (int(key) >= 65) && (int(key) <= 90) {
-                app.current_file.contents[app.current_file.edit[1]].base = app.current_file.contents[app.current_file.edit[1]].base.substr(0, app.current_file.edit[0]) + u8(key).ascii_str() + app.current_file.contents[app.current_file.edit[1]].base.substr(app.current_file.edit[0], app.current_file.contents[app.current_file.edit[1]].base.len)
-            } else {
-                app.current_file.contents[app.current_file.edit[1]].base = app.current_file.contents[app.current_file.edit[1]].base.substr(0, app.current_file.edit[0]) + key_map[u8(key)] + app.current_file.contents[app.current_file.edit[1]].base.substr(app.current_file.edit[0], app.current_file.contents[app.current_file.edit[1]].base.len)
-            }
-        } else {
-            app.current_file.contents[app.current_file.edit[1]].base = app.current_file.contents[app.current_file.edit[1]].base.substr(0, app.current_file.edit[0]) + u8(key).ascii_str().to_lower() + app.current_file.contents[app.current_file.edit[1]].base.substr(app.current_file.edit[0], app.current_file.contents[app.current_file.edit[1]].base.len)
-        }
-        app.current_file.contents[app.current_file.edit[1]].scan_line(app.current_file.edit[1])
-        app.current_file.edit[0]++
     }
     if key == gg.KeyCode.backspace {
         if app.current_file.edit != [0,0] {
@@ -459,37 +465,26 @@ fn kb_down(key gg.KeyCode, mod gg.Modifier, mut app &App){
                 app.current_file.contents.delete(app.current_file.edit[1])
                 app.current_file.edit[1]--
                 app.current_file.edit[0] = app.current_file.contents[app.current_file.edit[1]].base.len
-				if app.current_file.contents.len < int(gg.window_size().height/30) {
-                    stop = app.current_file.contents.len
-                } else {
-                    stop = int(gg.window_size().height/30)
-                }
-				for line in app.current_file.ystart .. stop {
-					app.current_file.contents[line].scan_line(line)
-				}
+                app.current_file.recalc_visible()
             }
         }
     }
-    if key == gg.KeyCode.tab {
-        app.current_file.contents[app.current_file.edit[1]].base = app.current_file.contents[app.current_file.edit[1]].base.substr(0, app.current_file.edit[0]) + "\t" + app.current_file.contents[app.current_file.edit[1]].base.substr(app.current_file.edit[0], app.current_file.contents[app.current_file.edit[1]].base.len)
-        app.current_file.edit[0] += app.current_file.contents[app.current_file.edit[1]].scan_line(app.current_file.edit[1])
+    if app.current_file.contents.len > 0 {
+        if app.current_file.contents[app.current_file.edit[1]].base.len > app.current_file.xmax {
+            app.current_file.xmax = app.current_file.contents[app.current_file.edit[1]].base.len
+        }
     }
-    if key == gg.KeyCode.enter {
-        if app.current_file.edit[0] == 0 {
-            app.current_file.contents.insert(app.current_file.edit[1], Line{})
-        } else if app.current_file.edit[0] == app.current_file.contents[app.current_file.edit[1]].base.len {
-            app.current_file.contents.insert(app.current_file.edit[1] + 1, Line{})
-            app.current_file.edit[0] = 0
-            app.current_file.edit[1]++
-        }
-        if app.current_file.contents.len < int(gg.window_size().height/30) {
-            stop = app.current_file.contents.len
-        } else {
-            stop = int(gg.window_size().height/30)
-        }
-        for line in app.current_file.ystart .. stop {
-            app.current_file.contents[line].scan_line(line)
-        }
+    if app.current_file.edit[0] - int(app.current_file.edit[0] > 0) - int(app.current_file.edit[0] > 1) - int(app.current_file.edit[0] > 2) < app.current_file.xshift/13 {
+        app.current_file.xshift -= app.current_file.xshift - (app.current_file.edit[0] - int(app.current_file.edit[0] > 0) - int(app.current_file.edit[0] > 1) - int(app.current_file.edit[0] > 2)) * 13
+    } else if app.current_file.edit[0] * 13 > app.current_file.xshift + gg.window_size().width - 39 {
+        app.current_file.xshift -= app.current_file.xshift + int(gg.window_size().width) - 39 - app.current_file.edit[0] * 13
+    }
+    if app.current_file.edit[1] < app.current_file.ystart {
+        app.current_file.ystart -= app.current_file.ystart - app.current_file.edit[1]
+        app.current_file.recalc_visible()
+    } else if app.current_file.edit[1] > app.current_file.ystart + int(gg.window_size().height/30) - 2 {
+        app.current_file.ystart -= app.current_file.ystart + int(gg.window_size().height/30) - app.current_file.edit[1] - 2
+        app.current_file.recalc_visible()
     }
 }
 
@@ -522,13 +517,13 @@ fn kb_up(key gg.KeyCode, mod gg.Modifier, mut app &App){
 
 fn scroll(data &gg.Event, mut app &App){
     if data.scroll_x != 0{
-        if app.current_file.xshift - data.scroll_x * 23 >= 0 {
-            app.current_file.xshift -= int(data.scroll_x) * 23
+        if (app.current_file.xshift - data.scroll_x * 26 >= 0) && (app.current_file.xshift - data.scroll_x * 26 < app.current_file.xmax * 13 - gg.window_size().width/2 + 26) {
+            app.current_file.xshift -= int(data.scroll_x) * 26
         }
     }
     if app.shift_down {
-        if app.current_file.xshift - (data.scroll_y / math.abs(data.scroll_y)) * 23 >= 0 {
-            app.current_file.xshift -= int(data.scroll_y / math.abs(data.scroll_y)) * 23
+        if (app.current_file.xshift - (data.scroll_y / math.abs(data.scroll_y)) * 26 >= 0) && (app.current_file.xshift - (data.scroll_y / math.abs(data.scroll_y)) * 26 < app.current_file.xmax * 13 - gg.window_size().width/2 + 26) {
+            app.current_file.xshift -= int(data.scroll_y / math.abs(data.scroll_y)) * 26
         }
         return
     }
@@ -557,21 +552,21 @@ fn render(mut app &App){
         })
     } else {
         mut stop := 0
-        if app.current_file.contents.len > math.ceil(gg.window_size().height/30){
+        if int(gg.window_size().height/30) + app.current_file.ystart >= app.current_file.contents.len {
+            stop = app.current_file.contents.len
+        } else {
             stop = int(math.ceil(gg.window_size().height/30)) + app.current_file.ystart
             stop += int(stop != app.current_file.contents.len)
-        } else {
-            stop = app.current_file.contents.len + app.current_file.ystart
         }
-        for line in app.current_file.ystart .. stop {
+        for line := stop - 1; line >= app.current_file.ystart; line-- {
             app.ctx.draw_text(0 - app.current_file.xshift, (line - app.current_file.ystart) * 30, app.current_file.contents[line].base, gx.TextCfg{
                 size:   28
                 color:  gx.white
             })
-            for token in app.current_file.contents[line].tkns {
-                app.ctx.draw_text(token.pos[0] * 13 - app.current_file.xshift, (token.pos[1] - app.current_file.ystart) * 30, token.str, gx.TextCfg{
+            for token := app.current_file.contents[line].tkns.len - 1; token >= 0; token-- {
+                app.ctx.draw_text(app.current_file.contents[line].tkns[token].pos[0] * 13 - app.current_file.xshift, (line - app.current_file.ystart) * 30, app.current_file.contents[line].tkns[token].str, gx.TextCfg{
                     size: 28
-                    color: token.color
+                    color: app.current_file.contents[line].tkns[token].color
                 })
             }
         }
