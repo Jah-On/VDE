@@ -16,9 +16,10 @@ const (
 
 [heap]
 struct App {
+pub mut:
+    cb              &clipboard.Clipboard
 mut:
     ctx             &gg.Context = 0
-    cb              &clipboard.Clipboard = clipboard.new()
     wk_dir          string
     files_in_dir    []File
     open_files      []File
@@ -95,7 +96,91 @@ fn token_matcher(mut line &Line, token &token.Token, line_nr int){
             line.tkns << KeyWord{
                 str:    token.lit
                 pos:    [token.col - 1, line_nr]
-                color:      gx.rgb(255, 0, 255)
+                color:      gx.rgb(160, 0, 160)
+            }
+        }
+        .key_asm {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:      gx.rgb(220, 0, 220)
+            }
+        }
+        .key_assert {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:      gx.rgb(220, 0, 220)
+            }
+        }
+        .key_atomic {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:      gx.rgb(0, 255, 25)
+            }
+        }
+        .key_break {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:      gx.rgb(220, 0, 220)
+            }
+        }
+        .key_const {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:      gx.rgb(220, 0, 220)
+            }
+        }
+        .key_continue {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:      gx.rgb(220, 0, 220)
+            }
+        }
+        .key_defer {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:      gx.rgb(220, 0, 220)
+            }
+        }
+        .key_dump {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:      gx.rgb(150, 0, 0)
+            }
+        }
+        .key_else {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:      gx.rgb(220, 0, 220)
+            }
+        }
+        .key_enum {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:      gx.rgb(120, 120, 120)
+            }
+        }
+        .key_false {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:      gx.rgb(0, 0, 255)
+            }
+        }
+        .key_for {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:      gx.rgb(220, 0, 220)
             }
         }
         .key_fn {
@@ -105,20 +190,201 @@ fn token_matcher(mut line &Line, token &token.Token, line_nr int){
                 color:      gx.rgb(255, 255, 128)
             }
         }
+        .key_global {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:      gx.rgb(220, 0, 220)
+            }
+        }
+        .key_go {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:      gx.rgb(220, 0, 220)
+            }
+        }
+        .key_goto {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:      gx.rgb(220, 0, 220)
+            }
+        }
+        .key_if {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:      gx.rgb(220, 0, 220)
+            }
+        }
         .key_import {
             line.tkns << KeyWord{
                 str:    token.lit
                 pos:    [token.col - 1, line_nr]
-                color:      gx.rgb(255, 0, 255)
+                color:      gx.rgb(180, 0, 180)
+            }
+        }
+        .key_in {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:      gx.rgb(220, 0, 220)
+            }
+        }
+        .key_interface {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:      gx.rgb(140, 0, 140)
+            }
+        }
+        .key_is {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:      gx.rgb(220, 0, 220)
+            }
+        }
+        // .key_isreftype {
+        // }
+        // .key_likely {
+        // }
+        .key_lock {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:      gx.rgb(220, 0, 220)
+            }
+        }
+        .key_match {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:      gx.rgb(220, 0, 220)
+            }
+        }
+        .key_module {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:      gx.rgb(180, 0, 180)
+            }
+        }
+        .key_mut {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:      gx.rgb(255, 200, 0)
+            }
+        }
+        .key_none {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:      gx.rgb(100, 0, 0)
+            }
+        }
+        .key_offsetof {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:      gx.rgb(150, 0, 0)
+            }
+        }
+        .key_orelse {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:      gx.rgb(220, 0, 220)
+            }
+        }
+        .key_pub {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:      gx.rgb(255, 200, 0)
+            }
+        }
+        .key_rlock {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:      gx.rgb(220, 0, 220)
+            }
+        }
+        .key_select {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:      gx.rgb(220, 0, 220)
+            }
+        }
+        .key_sizeof {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:      gx.rgb(150, 0, 0)
+            }
+        }
+        .key_shared {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:      gx.rgb(255, 200, 0)
+            }
+        }
+        .key_static {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:      gx.rgb(255, 200, 0)
             }
         }
         .key_struct {
             line.tkns << KeyWord{
                 str:    token.lit
                 pos:    [token.col - 1, line_nr]
-                color:  gx.rgb(100, 100, 100)
+                color:      gx.rgb(100, 100, 100)
             }
         }
+        .key_true {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:      gx.rgb(0, 0, 255)
+            }
+        }
+        .key_type {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:      gx.rgb(180, 180, 180)
+            }
+        }
+        .key_typeof {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:      gx.rgb(150, 0, 0)
+            }
+        }
+        .key_union {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:      gx.rgb(160, 160, 160)
+            }
+        }
+        .key_unsafe {
+            line.tkns << KeyWord{
+                str:    token.lit
+                pos:    [token.col - 1, line_nr]
+                color:      gx.rgb(220, 0, 220)
+            }
+        }
+        // .key_volatile {
+        // }
         .name {
             if token.lit == "bool" {
                 line.tkns << KeyWord{
@@ -126,55 +392,48 @@ fn token_matcher(mut line &Line, token &token.Token, line_nr int){
                     pos:    [token.col - 1, line_nr]
                     color:      gx.rgb(0, 0, 255)
                 }
-                return
-            }
+            } else
             if token.lit in ["i8", "i16","int", "i64"] {
                 line.tkns << KeyWord{
                     str:    token.lit
                     pos:    [token.col - 1, line_nr]
                     color:      gx.rgb(50, 100, 255)
                 }
-                return
-            }
+            } else
             if token.lit in ["u8", "u16","u32", "u64"] {
                 line.tkns << KeyWord{
                     str:    token.lit
                     pos:    [token.col - 1, line_nr]
                     color:      gx.rgb(0, 150, 255)
                 }
-                return
-            }
+            } else
             if token.lit in ["f32", "f64"] {
                 line.tkns << KeyWord{
                     str:    token.lit
                     pos:    [token.col - 1, line_nr]
                     color:      gx.rgb(0, 200, 255)
                 }
-                return
-            }
+            } else
             if token.lit == "string" {
                 line.tkns << KeyWord{
                     str:    token.lit
                     pos:    [token.col - 1, line_nr]
                     color:      gx.rgb(0, 200, 100)
                 }
-                return
-            }
+            } else
             if token.lit == "rune" {
                 line.tkns << KeyWord{
                     str:    token.lit
                     pos:    [token.col - 1, line_nr]
                     color:      gx.rgb(0, 150, 50)
                 }
-                return
-            }
+            } else
             if token.lit == "voidptr" {
                 line.tkns << KeyWord{
                     str:    token.lit
                     pos:    [token.col - 1, line_nr]
                     color:      gx.rgb(100, 0, 0)
                 }
-                return
             }
         }
         .number {
@@ -277,7 +536,10 @@ fn (mut line Line) scan_line(line_nr int) int {
 }
 
 fn main(){
+    mut test := clipboard.new()
+    println(test.paste())
     mut app := &App{
+        cb: clipboard.new()
         wk_dir: os.resource_abs_path("")
     }
     app.ctx = gg.new_context(
@@ -424,6 +686,18 @@ fn kb_down(key gg.KeyCode, mod gg.Modifier, mut app &App){
                     }
                 }
             }
+            if app.current_file.edit[0] - int(app.current_file.edit[0] > 0) - int(app.current_file.edit[0] > 1) - int(app.current_file.edit[0] > 2) < app.current_file.xshift/13 {
+                app.current_file.xshift -= app.current_file.xshift - (app.current_file.edit[0] - int(app.current_file.edit[0] > 0) - int(app.current_file.edit[0] > 1) - int(app.current_file.edit[0] > 2)) * 13
+            } else if app.current_file.edit[0] * 13 > app.current_file.xshift + gg.window_size().width - 39 {
+                app.current_file.xshift -= app.current_file.xshift + int(gg.window_size().width) - 39 - app.current_file.edit[0] * 13
+            }
+            if app.current_file.edit[1] < app.current_file.ystart {
+                app.current_file.ystart -= app.current_file.ystart - app.current_file.edit[1]
+                app.current_file.recalc_visible()
+            } else if app.current_file.edit[1] > app.current_file.ystart + int(gg.window_size().height/30) - 2 {
+                app.current_file.ystart -= app.current_file.ystart + int(gg.window_size().height/30) - app.current_file.edit[1] - 2
+                app.current_file.recalc_visible()
+            }
         }
     }
     if key == gg.KeyCode.down {
@@ -474,18 +748,6 @@ fn kb_down(key gg.KeyCode, mod gg.Modifier, mut app &App){
             app.current_file.xmax = app.current_file.contents[app.current_file.edit[1]].base.len
         }
     }
-    if app.current_file.edit[0] - int(app.current_file.edit[0] > 0) - int(app.current_file.edit[0] > 1) - int(app.current_file.edit[0] > 2) < app.current_file.xshift/13 {
-        app.current_file.xshift -= app.current_file.xshift - (app.current_file.edit[0] - int(app.current_file.edit[0] > 0) - int(app.current_file.edit[0] > 1) - int(app.current_file.edit[0] > 2)) * 13
-    } else if app.current_file.edit[0] * 13 > app.current_file.xshift + gg.window_size().width - 39 {
-        app.current_file.xshift -= app.current_file.xshift + int(gg.window_size().width) - 39 - app.current_file.edit[0] * 13
-    }
-    if app.current_file.edit[1] < app.current_file.ystart {
-        app.current_file.ystart -= app.current_file.ystart - app.current_file.edit[1]
-        app.current_file.recalc_visible()
-    } else if app.current_file.edit[1] > app.current_file.ystart + int(gg.window_size().height/30) - 2 {
-        app.current_file.ystart -= app.current_file.ystart + int(gg.window_size().height/30) - app.current_file.edit[1] - 2
-        app.current_file.recalc_visible()
-    }
 }
 
 fn kb_up(key gg.KeyCode, mod gg.Modifier, mut app &App){
@@ -503,6 +765,7 @@ fn kb_up(key gg.KeyCode, mod gg.Modifier, mut app &App){
         exit(0)
     }
 	if (key == gg.KeyCode.v) && (mod == gg.Modifier.ctrl){
+        println(app.cb.paste())
     }
     if (key == gg.KeyCode.left_bracket) && (mod == gg.Modifier.ctrl){
         app.current_file = &app.files_in_dir[app.current_file.index + (-1 * int(app.current_file.index != 0))]
