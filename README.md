@@ -21,7 +21,7 @@ To do:
 - Alpha:
   - [x] Allow editing (one character at a time)
   - [x] Highlighting for primatives
-  - [ ] Highlighting for keywords (partial)
+  - [x] Highlighting for keywords
   - [ ] More efficient rendering
   - [x] Horizontal scroll capping
   - [x] Text cursor following
