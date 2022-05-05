@@ -29,7 +29,7 @@ To do:
   - [ ] Copy/Paste
   - [ ] Add bottom bar for save state and row+col info
   - [ ] Argument launching
-  - [ ] Add more to this list
+  - [ ] Add support for multiline comments
   - [ ] Add word by word "hopping"
   - [ ] Add a way to make new file
   - [ ] Scaling
