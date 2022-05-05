@@ -16,8 +16,8 @@ const (
 
 [heap]
 struct App {
-pub mut:
-    cb              &clipboard.Clipboard
+// pub mut:
+//     cb              &clipboard.Clipboard
 mut:
     ctx             &gg.Context = 0
     wk_dir          string
@@ -39,6 +39,7 @@ mut:
     xshift      int
     xmax        int
     edit        []int = [0,0]
+    highlight   []int = [-1, -1]
     read_only   bool
     ref_files   []File
 }
@@ -87,8 +88,8 @@ fn token_matcher(mut line &Line, token &token.Token, line_nr int){
     match token.kind {
         .comment {
             line.tkns << KeyWord{
-                str:    "//" + " ".repeat(int(token.pos > 1)) + token.lit.substr(int(token.lit.len != 0), token.lit.len)
-                pos:    [line.base.index("//") or {0}, line_nr]
+                str:    "//" + token.lit.substr(int(token.pos < 0), token.lit.len)
+                pos:    [token.pos + int(token.pos < 0), line_nr]
                 color:  gx.rgb(0, 50, 50)
             }
         }
@@ -242,7 +243,7 @@ fn token_matcher(mut line &Line, token &token.Token, line_nr int){
         .key_is {
             line.tkns << KeyWord{
                 str:    token.lit
-                pos:    [token.col - 1, line_nr]
+            	pos:    [token.col - 1, line_nr]
                 color:      gx.rgb(220, 0, 220)
             }
         }
@@ -536,10 +537,8 @@ fn (mut line Line) scan_line(line_nr int) int {
 }
 
 fn main(){
-    mut test := clipboard.new()
-    println(test.paste())
     mut app := &App{
-        cb: clipboard.new()
+        // cb: clipboard.new()
         wk_dir: os.resource_abs_path("")
     }
     app.ctx = gg.new_context(
@@ -549,11 +548,12 @@ fn main(){
         bg_color: gx.rgb(25,25,25)
         frame_fn: render
         user_data: app
-        font_path: os.resource_abs_path("../RobotoMono-Regular.ttf")
+        font_path: os.resource_abs_path("assets/RobotoMono-Regular.ttf")
         keyup_fn: kb_up
         keydown_fn: kb_down
         scroll_fn: scroll
         click_fn: click
+        // swap_interval: 2
         // ui_mode: true
     )
     app.scan_files()
@@ -592,14 +592,44 @@ fn kb_down(key gg.KeyCode, mod gg.Modifier, mut app &App){
         }
         else {
             match key {
+                .backspace {
+                    if app.current_file.edit != [0,0] {
+                        if app.current_file.edit[0] != 0 {
+                            for tab in 0 .. app.current_file.contents[app.current_file.edit[1]].tabs.len {
+                                if app.current_file.edit[0] == app.current_file.contents[app.current_file.edit[1]].tabs[tab][1]{
+                                    app.current_file.contents[app.current_file.edit[1]].base = app.current_file.contents[app.current_file.edit[1]].base.substr(0, app.current_file.contents[app.current_file.edit[1]].tabs[tab][0]) + app.current_file.contents[app.current_file.edit[1]].base.substr(app.current_file.contents[app.current_file.edit[1]].tabs[tab][1], app.current_file.contents[app.current_file.edit[1]].base.len)
+                                    app.current_file.edit[0] += app.current_file.contents[app.current_file.edit[1]].tabs[tab][0] - app.current_file.contents[app.current_file.edit[1]].tabs[tab][1]
+                                    app.current_file.contents[app.current_file.edit[1]].tabs.delete(tab)
+                                    app.current_file.contents[app.current_file.edit[1]].scan_line(app.current_file.edit[1])
+                                    return
+                                }
+                            }
+                            app.current_file.contents[app.current_file.edit[1]].base = app.current_file.contents[app.current_file.edit[1]].base.substr(0, app.current_file.edit[0] - 1) + app.current_file.contents[app.current_file.edit[1]].base.substr(app.current_file.edit[0], app.current_file.contents[app.current_file.edit[1]].base.len)
+                            app.current_file.edit[0]--
+                            app.current_file.contents[app.current_file.edit[1]].scan_line(app.current_file.edit[1])
+                        } else {
+                            app.current_file.edit[0] = app.current_file.contents[app.current_file.edit[1]- 1].base.len
+                            if app.current_file.contents[app.current_file.edit[1]].base != "" {
+                                app.current_file.contents[app.current_file.edit[1] - 1].base += app.current_file.contents[app.current_file.edit[1]].base
+                                app.current_file.contents[app.current_file.edit[1] - 1].tabs << app.current_file.contents[app.current_file.edit[1]].tabs
+                            }
+                            app.current_file.contents.delete(app.current_file.edit[1])
+                            app.current_file.edit[1]--
+                            app.current_file.recalc_visible()
+                        }
+                    }
+                }
                 .enter {
                     if app.current_file.edit[0] == 0 {
                         app.current_file.contents.insert(app.current_file.edit[1], Line{})
-                    } else if app.current_file.edit[0] == app.current_file.contents[app.current_file.edit[1]].base.len {
-                        app.current_file.contents.insert(app.current_file.edit[1] + 1, Line{})
-                        app.current_file.edit[0] = 0
-                        app.current_file.edit[1]++
+                    } else {
+                        app.current_file.contents.insert(app.current_file.edit[1] + 1, Line{
+                            base: app.current_file.contents[app.current_file.edit[1]].base.substr(app.current_file.edit[0], app.current_file.contents[app.current_file.edit[1]].base.len)
+                        })
+                        app.current_file.contents[app.current_file.edit[1]].base = app.current_file.contents[app.current_file.edit[1]].base.substr(0, app.current_file.edit[0])
                     }
+                    app.current_file.edit[0] = 0
+                    app.current_file.edit[1]++
                     app.current_file.recalc_visible()
                 }
                 .left {
@@ -716,33 +746,6 @@ fn kb_down(key gg.KeyCode, mod gg.Modifier, mut app &App){
             }
         }
     }
-    if key == gg.KeyCode.backspace {
-        if app.current_file.edit != [0,0] {
-            if app.current_file.edit[0] != 0 {
-                for tab in 0 .. app.current_file.contents[app.current_file.edit[1]].tabs.len {
-                    if app.current_file.edit[0] == app.current_file.contents[app.current_file.edit[1]].tabs[tab][1]{
-                        app.current_file.contents[app.current_file.edit[1]].base = app.current_file.contents[app.current_file.edit[1]].base.substr(0, app.current_file.contents[app.current_file.edit[1]].tabs[tab][0]) + app.current_file.contents[app.current_file.edit[1]].base.substr(app.current_file.contents[app.current_file.edit[1]].tabs[tab][1], app.current_file.contents[app.current_file.edit[1]].base.len)
-                        app.current_file.edit[0] += app.current_file.contents[app.current_file.edit[1]].tabs[tab][0] - app.current_file.contents[app.current_file.edit[1]].tabs[tab][1]
-                        app.current_file.contents[app.current_file.edit[1]].tabs.delete(tab)
-						app.current_file.contents[app.current_file.edit[1]].scan_line(app.current_file.edit[1])
-                        return
-                    }
-                }
-                app.current_file.contents[app.current_file.edit[1]].base = app.current_file.contents[app.current_file.edit[1]].base.substr(0, app.current_file.edit[0] - 1) + app.current_file.contents[app.current_file.edit[1]].base.substr(app.current_file.edit[0], app.current_file.contents[app.current_file.edit[1]].base.len)
-                app.current_file.edit[0]--
-				app.current_file.contents[app.current_file.edit[1]].scan_line(app.current_file.edit[1])
-            } else {
-                if app.current_file.contents[app.current_file.edit[1]].base != "" {
-                    app.current_file.contents[app.current_file.edit[1] - 1].base += app.current_file.contents[app.current_file.edit[1]].base
-                    app.current_file.contents[app.current_file.edit[1] - 1].tabs << app.current_file.contents[app.current_file.edit[1]].tabs
-                }
-                app.current_file.contents.delete(app.current_file.edit[1])
-                app.current_file.edit[1]--
-                app.current_file.edit[0] = app.current_file.contents[app.current_file.edit[1]].base.len
-                app.current_file.recalc_visible()
-            }
-        }
-    }
     if app.current_file.contents.len > 0 {
         if app.current_file.contents[app.current_file.edit[1]].base.len > app.current_file.xmax {
             app.current_file.xmax = app.current_file.contents[app.current_file.edit[1]].base.len
@@ -764,8 +767,7 @@ fn kb_up(key gg.KeyCode, mod gg.Modifier, mut app &App){
 		p.run()
         exit(0)
     }
-	if (key == gg.KeyCode.v) && (mod == gg.Modifier.ctrl){
-        println(app.cb.paste())
+    if (key == gg.KeyCode.v) && (mod == gg.Modifier.ctrl){
     }
     if (key == gg.KeyCode.left_bracket) && (mod == gg.Modifier.ctrl){
         app.current_file = &app.files_in_dir[app.current_file.index + (-1 * int(app.current_file.index != 0))]
