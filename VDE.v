@@ -474,6 +474,8 @@ fn (mut app App) scan_files(){
         }
         if os.is_executable(file_path){
             app.files_in_dir[app.files_in_dir.len-1].alt = "This file is executable, will not display contents."
+        } else if file_path.substr(file_path.len - 2, file_path.len) != ".v" {
+            app.files_in_dir[app.files_in_dir.len-1].alt = "Only V files can be displayed/edited for now."
         } else {
             mut file_obj := os.open(file_path) or {
                 files_skipped++
