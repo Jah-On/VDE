@@ -14,7 +14,6 @@ Install and run steps:
 Current shortcuts:
  - Ctrl S, save file
  - Ctrl Q, exit without saving
- - Ctrl R, (not working properly yet and is only meant for VDE.v) save, compile, run the new VDE file, and close the old instance.
  - Ctrl [ or ], switch between files in directory
 
 To do:
@@ -22,8 +21,8 @@ To do:
   - [x] Allow editing (one character at a time)
   - [x] Highlighting for primatives
   - [x] Highlighting for keywords
-  - [ ] More efficient rendering
-  - [x] Horizontal scroll capping
+  - [x] More efficient rendering
+  - [ ] Horizontal scroll capping
   - [x] Text cursor following
   - [ ] Text highlighting
   - [ ] Copy/Paste
