@@ -7,7 +7,7 @@ Install and run steps:
   ```bash
   git clone https://github.com/Jah-On/VDE
   cd VDE
-  v VDE.v -gc boehm
+  v VDE.v -gc boehm (or v VDE.v -gc boehm -prod for better efficiency)
   ./VDE
   ```
 
