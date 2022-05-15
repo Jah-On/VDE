@@ -21,6 +21,9 @@ To do:
   - [x] Allow editing (one character at a time)
   - [x] Highlighting for primatives
   - [x] Highlighting for keywords
+  - [ ] Highlighting for single line
+  - [ ] Highlighting for strings
+  - [ ] Highlighting for multi line comments
   - [x] More efficient rendering
   - [ ] Horizontal scroll capping
   - [x] Text cursor following
