@@ -21,9 +21,10 @@ To do:
   - [x] Allow editing (one character at a time)
   - [x] Highlighting for primatives
   - [x] Highlighting for keywords
-  - [ ] Highlighting for single line
-  - [ ] Highlighting for strings
-  - [ ] Highlighting for multi line comments
+  - [x] Highlighting for single line comments
+  - [x] Highlighting for strings
+  - [x] Highlighting for multi line comments
+  - [ ] Highlighting for numbers
   - [x] More efficient rendering
   - [ ] Horizontal scroll capping
   - [x] Text cursor following
@@ -31,7 +32,6 @@ To do:
   - [ ] Copy/Paste
   - [ ] Add bottom bar for save state and row+col info
   - [ ] Argument launching
-  - [ ] Add support for multiline comments
   - [ ] Add word by word "hopping"
   - [ ] Add a way to make new file
   - [ ] Scaling
