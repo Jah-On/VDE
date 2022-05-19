@@ -77,7 +77,7 @@ fn main(){
 fn click(x f32, y f32, button gg.MouseButton, mut app &App){
     if button == gg.MouseButton.left {
         app.current_file.edit[1] = int((y + app.current_file.shift[1]) / 30)
-        if x / 13 + app.current_file.shift[1] / 13 > app.current_file.lines[app.current_file.edit[1]].len {
+        if x + app.current_file.shift[0] > app.current_file.lines[app.current_file.edit[1]].len * 13 {
             app.current_file.edit[0] = app.current_file.lines[app.current_file.edit[1]].len
         } else {
             app.current_file.edit[0] = int((x + app.current_file.shift[0]) / 13)
@@ -230,7 +230,7 @@ fn kb_up(key gg.KeyCode, mod gg.Modifier, mut app &App){
 
 fn scroll(data &gg.Event, mut app &App){
     if data.scroll_x != 0{
-        if (app.current_file.shift[0] - data.scroll_x * 26 >= 0) && (app.current_file.shift[0] - data.scroll_x * 26 < app.current_file.xmax * 13 - gg.window_size().width/2 + 26) {
+        if (app.current_file.shift[0] - data.scroll_x * 26 >= 0) && (app.current_file.shift[0] - data.scroll_x * 26 < app.current_file.xmax - gg.window_size().width/2 + 26) {
             app.current_file.shift[0] -= int(data.scroll_x) * 26
             return
         }
