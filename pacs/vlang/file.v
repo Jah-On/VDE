@@ -22,7 +22,7 @@ pub fn load(path string) &pacs.File {
 		println("The program should never crash here (Line 32). Please submit a GitHub issue!")
 		exit(404)
 	}
-	rtrn.lines = file_obj.read_bytes(int(os.file_size(path))).bytestr().split("\n")
+	rtrn.lines = file_obj.read_bytes(int(os.file_size(path))).bytestr().replace("\r", "").split("\n")
 	return rtrn
 }
 

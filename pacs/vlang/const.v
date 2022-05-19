@@ -34,6 +34,7 @@ pub const (
 		"offsetof":  gx.rgb(150, 0, 0)
 		"orelse":    gx.rgb(220, 0, 220)
 		"pub":       gx.rgb(255, 200, 0)
+		"return":    gx.rgb(220, 0, 220)
 		"rlock":     gx.rgb(220, 0, 220)
 		"select":    gx.rgb(220, 0, 220)
 		"sizeof":    gx.rgb(150, 0, 0)
