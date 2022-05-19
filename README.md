@@ -26,7 +26,7 @@ To do:
   - [x] Highlighting for multi line comments
   - [ ] Highlighting for numbers
   - [x] More efficient rendering
-  - [ ] Horizontal scroll capping
+  - [x] Horizontal scroll capping
   - [x] Text cursor following
   - [ ] Text highlighting
   - [ ] Copy/Paste
