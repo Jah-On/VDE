@@ -33,6 +33,7 @@ pub fn parse(scale f32, mut file &pacs.File){
 	mut in_comment := false
 	mut nested_comments := 0 // For that one maniac... you're welcome
 	mut in_string := false
+	mut in_escape_sec := false
 	mut entry_char := ""
 	// mut in_structure := false
 	// mut open_p_or_b_or_cb := 0
@@ -83,7 +84,7 @@ pub fn parse(scale f32, mut file &pacs.File){
 			}
 			else if in_string {
 				if index > 0 {
-					if (file.rlines[line].substr(index, index + 1) == entry_char) && (file.rlines[line].substr(index - 1, index) != "\\"){
+					if (file.rlines[line].substr(index, index + 1) == entry_char) && !in_escape_sec{
 						file.kws << pacs.Highlight{
 							text:  file.rlines[line].substr(last, index + 1)
 							color: gx.rgb(255, 175, 75)
@@ -94,6 +95,17 @@ pub fn parse(scale f32, mut file &pacs.File){
 						}
 						in_string = false
 						last = index + 1
+					}
+					if !in_escape_sec {
+						if file.rlines[line].substr(index, index + 1) == "\\" {
+							in_escape_sec = true
+						}
+					}
+					else {
+						if file.rlines[line].substr(index, index + 1) == entry_char {
+							in_string = true
+						}
+						in_escape_sec = false
 					}
 				}
 				else if file.rlines[line].substr(index, index + 1) == entry_char {

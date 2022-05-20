@@ -1,4 +1,4 @@
-import clipboard as lol
+import clipboard as cb
 import gg
 import gx
 import math
@@ -15,10 +15,9 @@ const (
 
 [heap]
 struct App {
-// pub mut:
-//     cb              &clipboard.Clipboard
-mut:
+pub mut:
     ctx             &gg.Context = 0
+    cb              &cb.Clipboard
     wk_dir          string
     files_in_dir    []pacs.File
     open_files      []pacs.File
@@ -50,7 +49,7 @@ fn (mut app App) scan_files(){
 
 fn main(){
     mut app := &App{
-        // cb: clipboard.new()
+        cb: cb.new()
         wk_dir: os.resource_abs_path("")
     }
     app.ctx = gg.new_context(
@@ -65,7 +64,7 @@ fn main(){
         keydown_fn: kb_down
         scroll_fn: scroll
         click_fn: click
-        swap_interval: 2
+        // swap_interval: 2
         // ui_mode: true
     )
     app.scan_files()
@@ -88,7 +87,104 @@ fn click(x f32, y f32, button gg.MouseButton, mut app &App){
 fn kb_down(key gg.KeyCode, mod gg.Modifier, mut app &App){
     mut temp := 0
     match mod {
-        .shift {}
+        .shift {
+            match key {
+                .backspace {
+                    if app.current_file.edit != [0,0] {
+                        if app.current_file.edit[0] != 0 {
+                            app.current_file.lines[app.current_file.edit[1]] = app.current_file.lines[app.current_file.edit[1]].substr(0, app.current_file.edit[0] - 1) + app.current_file.lines[app.current_file.edit[1]].substr(app.current_file.edit[0], app.current_file.lines[app.current_file.edit[1]].len)
+                            app.current_file.edit[0]--
+                        } else {
+                            app.current_file.edit[0] = app.current_file.lines[app.current_file.edit[1]- 1].len
+                            if app.current_file.lines[app.current_file.edit[1]] != "" {
+                                app.current_file.lines[app.current_file.edit[1] - 1] = app.current_file.lines[app.current_file.edit[1] - 1] + app.current_file.lines[app.current_file.edit[1]]
+                            }
+                            app.current_file.lines.delete(app.current_file.edit[1])
+                            app.current_file.edit[1]--
+                        }
+                        vlang.parse(1.0, mut app.current_file)
+                    }
+                }
+                .enter {
+                    if app.current_file.edit[0] == 0 {
+                        app.current_file.lines.insert(app.current_file.edit[1], "")
+                    } else {
+                        app.current_file.lines.insert(app.current_file.edit[1] + 1, app.current_file.lines[app.current_file.edit[1]].substr(app.current_file.edit[0], app.current_file.lines[app.current_file.edit[1]].len))
+                        app.current_file.lines[app.current_file.edit[1]] = app.current_file.lines[app.current_file.edit[1]].substr(0, app.current_file.edit[0])
+                    }
+                    app.current_file.edit[0] = 0
+                    app.current_file.edit[1]++
+                    vlang.parse(1.0, mut app.current_file)
+                }
+                .left {
+                    // if temp != 1 {
+                    //     if app.current_file.edit[0] == 0 {
+                    //         if app.current_file.edit[1] - 1 >= 0 {
+                    //             app.current_file.edit = [app.current_file.rlines[app.current_file.edit[1] - 1].len, app.current_file.edit[1] - 1]
+                    //         }
+                    //     } else {
+                    //         app.current_file.edit[0]--
+                    //     }
+                    // }
+                }
+                .page_down {
+                    // if app.current_file.edit[1] + 50 < app.current_file.rlines.len {
+                    //     app.current_file.edit[1] += 50
+                    // } else {
+                    //     app.current_file.edit[1] = app.current_file.rlines.len - 1
+                    // }
+                    // if app.current_file.edit[0] > app.current_file.rlines[app.current_file.edit[1]].len {
+                    //     app.current_file.edit[0] = app.current_file.rlines[app.current_file.edit[1]].len
+                    // }
+                }
+                .page_up {
+                    // if app.current_file.edit[1] - 50 >= 0 {
+                    //     app.current_file.edit[1] -= 50
+                    // } else {
+                    //     app.current_file.edit[1] = 0
+                    // }
+                    // if app.current_file.edit[0] > app.current_file.rlines[app.current_file.edit[1]].len {
+                    //     app.current_file.edit[0] = app.current_file.rlines[app.current_file.edit[1]].len
+                    // }
+                }
+                .right {
+                    // if app.current_file.edit[0] >= app.current_file.rlines[app.current_file.edit[1]].len {
+                    //     if app.current_file.edit[1] + 1 <= app.current_file.rlines.len - 1 {
+                    //         app.current_file.edit = [0, app.current_file.edit[1] + 1]
+                    //     }
+                    // } else {
+                    //     app.current_file.edit[0]++
+                    // }
+                }
+                // .tab {
+                //     app.current_file.lines[app.current_file.edit[1]] = app.current_file.lines[app.current_file.edit[1]].substr(0, app.current_file.edit[0]) + "\t" + app.current_file.lines[app.current_file.edit[1]].substr(app.current_file.edit[0], app.current_file.lines[app.current_file.edit[1]].len)
+                //     vlang.parse(1.0, mut app.current_file)
+                //     app.current_file.edit[0] += app.current_file.contents[app.current_file.edit[1]].scan_line(app.current_file.edit[1])
+                // }
+                .up {
+                    // if app.current_file.edit[1] > 0{
+                    //     app.current_file.edit[1]--
+                    // } else {
+                    //     app.current_file.edit[0] = 0
+                    // }
+                    // if app.current_file.edit[0] > app.current_file.rlines[app.current_file.edit[1]].len {
+                    //     app.current_file.edit[0] = app.current_file.rlines[app.current_file.edit[1]].len
+                    // }
+                }
+                else {
+                    if (int(key) >= 32) && (int(key) <= 96) {
+                        if u8(key).ascii_str().to_upper() == u8(key).ascii_str() {
+                            app.current_file.lines[app.current_file.edit[1]] = app.current_file.lines[app.current_file.edit[1]].substr(0, app.current_file.edit[0]) + key_map[int(key)] + app.current_file.lines[app.current_file.edit[1]].substr(app.current_file.edit[0], app.current_file.lines[app.current_file.edit[1]].len)
+                        }
+                        else {
+                            app.current_file.lines[app.current_file.edit[1]] = app.current_file.lines[app.current_file.edit[1]].substr(0, app.current_file.edit[0]) + u8(key).ascii_str().to_upper() + app.current_file.lines[app.current_file.edit[1]].substr(app.current_file.edit[0], app.current_file.lines[app.current_file.edit[1]].len)
+                        }
+                        vlang.parse(1.0, mut app.current_file)
+                        app.current_file.edit[0]++
+                    }
+                }
+            }
+        }
         .ctrl {}
         else {
             match key {
@@ -162,7 +258,8 @@ fn kb_down(key gg.KeyCode, mod gg.Modifier, mut app &App){
                 }
                 .right_shift {if !app.shift_down {app.shift_down = true}}
                 // .tab {
-                //     app.current_file.contents[app.current_file.edit[1]].base = app.current_file.contents[app.current_file.edit[1]].base.substr(0, app.current_file.edit[0]) + "\t" + app.current_file.contents[app.current_file.edit[1]].base.substr(app.current_file.edit[0], app.current_file.contents[app.current_file.edit[1]].base.len)
+                //     app.current_file.lines[app.current_file.edit[1]] = app.current_file.lines[app.current_file.edit[1]].substr(0, app.current_file.edit[0]) + "\t" + app.current_file.lines[app.current_file.edit[1]].substr(app.current_file.edit[0], app.current_file.lines[app.current_file.edit[1]].len)
+                //     vlang.parse(1.0, mut app.current_file)
                 //     app.current_file.edit[0] += app.current_file.contents[app.current_file.edit[1]].scan_line(app.current_file.edit[1])
                 // }
                 .up {
@@ -215,6 +312,14 @@ fn kb_up(key gg.KeyCode, mod gg.Modifier, mut app &App){
         vlang.save(mut app.current_file)
     }
     if (key == gg.KeyCode.v) && (mod == gg.Modifier.ctrl){
+        if app.current_file.highlight[0] >= 0 {
+            // To be implemented
+        }
+        else {
+            println(app.cb.paste())
+            app.current_file.lines[app.current_file.edit[1]] = app.current_file.lines[app.current_file.edit[1]].substr(0, app.current_file.edit[0]) + app.cb.paste() + app.current_file.lines[app.current_file.edit[1]].substr(app.current_file.edit[0], app.current_file.lines[app.current_file.edit[1]].len)
+            vlang.parse(1.0, mut app.current_file)
+        }
     }
     if (key == gg.KeyCode.left_bracket) && (mod == gg.Modifier.ctrl){
         app.current_index -= int(app.current_index != 0)
