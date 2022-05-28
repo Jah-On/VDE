@@ -52,6 +52,7 @@ fn main(){
         cb: cb.new()
         wk_dir: os.resource_abs_path("")
     }
+    app.cb.paste()
     app.ctx = gg.new_context(
         width: 1920
         height: 1050
@@ -64,7 +65,8 @@ fn main(){
         keydown_fn: kb_down
         scroll_fn: scroll
         click_fn: click
-        // swap_interval: 2
+        unclick_fn: unclick
+        swap_interval: 2
         // ui_mode: true
     )
     app.scan_files()
@@ -75,12 +77,40 @@ fn main(){
 
 fn click(x f32, y f32, button gg.MouseButton, mut app &App){
     if button == gg.MouseButton.left {
+        if app.shift_down {
+            app.current_file.highlight = app.current_file.edit.clone()
+        } 
+        else {
+            app.current_file.highlight = [-1, -1]
+        }
         app.current_file.edit[1] = int((y + app.current_file.shift[1]) / 30)
+        if app.current_file.edit[1] >= app.current_file.lines.len {
+            app.current_file.edit[1] = app.current_file.lines.len - 1
+        }
         if x + app.current_file.shift[0] > app.current_file.lines[app.current_file.edit[1]].len * 13 {
             app.current_file.edit[0] = app.current_file.lines[app.current_file.edit[1]].len
         } else {
             app.current_file.edit[0] = int((x + app.current_file.shift[0]) / 13)
         }
+    }
+}
+
+fn unclick(x f32, y f32, button gg.MouseButton, mut app &App){
+    mut temp := [0, 0]
+    if button == gg.MouseButton.left {
+        temp[1] = int((y + app.current_file.shift[1]) / 30)
+        if temp[0] >= app.current_file.lines.len {
+            temp[0] = app.current_file.lines.len - 1
+        }
+        if x + app.current_file.shift[0] > app.current_file.lines[temp[1]].len * 13 {
+            temp[0] = app.current_file.lines[temp[1]].len
+        } else {
+            temp[0] = int((x + app.current_file.shift[0]) / 13)
+        }
+    }
+    if temp != app.current_file.edit {
+        app.current_file.highlight = app.current_file.edit.clone()
+        app.current_file.edit = temp.clone()
     }
 }
 
@@ -117,15 +147,18 @@ fn kb_down(key gg.KeyCode, mod gg.Modifier, mut app &App){
                     vlang.parse(1.0, mut app.current_file)
                 }
                 .left {
-                    // if temp != 1 {
-                    //     if app.current_file.edit[0] == 0 {
-                    //         if app.current_file.edit[1] - 1 >= 0 {
-                    //             app.current_file.edit = [app.current_file.rlines[app.current_file.edit[1] - 1].len, app.current_file.edit[1] - 1]
-                    //         }
-                    //     } else {
-                    //         app.current_file.edit[0]--
-                    //     }
-                    // }
+                    if app.current_file.highlight[0] == -1 {
+                        app.current_file.highlight = app.current_file.edit.clone()
+                    }
+                    if temp != 1 {
+                        if app.current_file.edit[0] == 0 {
+                            if app.current_file.edit[1] - 1 >= 0 {
+                                app.current_file.edit = [app.current_file.rlines[app.current_file.edit[1] - 1].len, app.current_file.edit[1] - 1]
+                            }
+                        } else {
+                            app.current_file.edit[0]--
+                        }
+                    }
                 }
                 .page_down {
                     // if app.current_file.edit[1] + 50 < app.current_file.rlines.len {
@@ -148,13 +181,16 @@ fn kb_down(key gg.KeyCode, mod gg.Modifier, mut app &App){
                     // }
                 }
                 .right {
-                    // if app.current_file.edit[0] >= app.current_file.rlines[app.current_file.edit[1]].len {
-                    //     if app.current_file.edit[1] + 1 <= app.current_file.rlines.len - 1 {
-                    //         app.current_file.edit = [0, app.current_file.edit[1] + 1]
-                    //     }
-                    // } else {
-                    //     app.current_file.edit[0]++
-                    // }
+                    if app.current_file.highlight[0] == -1 {
+                        app.current_file.highlight = app.current_file.edit.clone()
+                    }
+                    if app.current_file.edit[0] >= app.current_file.rlines[app.current_file.edit[1]].len {
+                        if app.current_file.edit[1] + 1 <= app.current_file.rlines.len - 1 {
+                            app.current_file.edit = [0, app.current_file.edit[1] + 1]
+                        }
+                    } else {
+                        app.current_file.edit[0]++
+                    }
                 }
                 // .tab {
                 //     app.current_file.lines[app.current_file.edit[1]] = app.current_file.lines[app.current_file.edit[1]].substr(0, app.current_file.edit[0]) + "\t" + app.current_file.lines[app.current_file.edit[1]].substr(app.current_file.edit[0], app.current_file.lines[app.current_file.edit[1]].len)
@@ -171,6 +207,8 @@ fn kb_down(key gg.KeyCode, mod gg.Modifier, mut app &App){
                     //     app.current_file.edit[0] = app.current_file.rlines[app.current_file.edit[1]].len
                     // }
                 }
+                .left_shift {if !app.shift_down {app.shift_down = true}}
+                .right_shift {if !app.shift_down {app.shift_down = true}}
                 else {
                     if (int(key) >= 32) && (int(key) <= 96) {
                         if u8(key).ascii_str().to_upper() == u8(key).ascii_str() {
@@ -216,6 +254,7 @@ fn kb_down(key gg.KeyCode, mod gg.Modifier, mut app &App){
                     vlang.parse(1.0, mut app.current_file)
                 }
                 .left {
+                    app.current_file.highlight = [-1, -1]
                     if temp != 1 {
                         if app.current_file.edit[0] == 0 {
                             if app.current_file.edit[1] - 1 >= 0 {
@@ -248,6 +287,7 @@ fn kb_down(key gg.KeyCode, mod gg.Modifier, mut app &App){
                     }
                 }
                 .right {
+                    app.current_file.highlight = [-1, -1]
                     if app.current_file.edit[0] >= app.current_file.rlines[app.current_file.edit[1]].len {
                         if app.current_file.edit[1] + 1 <= app.current_file.rlines.len - 1 {
                             app.current_file.edit = [0, app.current_file.edit[1] + 1]
@@ -311,13 +351,55 @@ fn kb_up(key gg.KeyCode, mod gg.Modifier, mut app &App){
     if (key == gg.KeyCode.s) && (mod == gg.Modifier.ctrl){
         vlang.save(mut app.current_file)
     }
+    if (key == gg.KeyCode.c) && (mod == gg.Modifier.ctrl){
+        if app.current_file.highlight[0] != -1 {
+            if app.current_file.highlight[1] == app.current_file.edit[1] {
+                if app.current_file.highlight[0] > app.current_file.edit[0] {
+                    app.cb.copy(app.current_file.lines[app.current_file.highlight[1]].substr(app.current_file.edit[0], app.current_file.highlight[0]))
+                }
+                else {
+                    app.cb.copy(app.current_file.lines[app.current_file.highlight[1]].substr(app.current_file.highlight[0], app.current_file.edit[0]))
+                }
+            } 
+            else {
+                if app.current_file.highlight[1] > app.current_file.edit[1] {
+                    // println(
+                    //     app.current_file.lines[app.current_file.edit[1]].substr(app.current_file.edit[0], app.current_file.lines[app.current_file.edit[1]].len) + "\n" +
+                    //     app.current_file.lines[app.current_file.edit[1] + 1 .. app.current_file.highlight[1]].join("\n") +
+                    //     app.current_file.lines[app.current_file.highlight[1]].substr(0, app.current_file.highlight[0])
+                    // )
+                    app.cb.copy(
+                        app.current_file.lines[app.current_file.edit[1]].substr(app.current_file.edit[0], app.current_file.lines[app.current_file.edit[1]].len) + "\n" +
+                        app.current_file.lines[app.current_file.edit[1] + 1 .. app.current_file.highlight[1]].join_lines() + "\n" +
+                        app.current_file.lines[app.current_file.highlight[1]].substr(0, app.current_file.highlight[0])
+                    )
+                }
+                else {
+                    app.cb.copy(
+                        app.current_file.lines[app.current_file.highlight[1]].substr(app.current_file.highlight[0], app.current_file.lines[app.current_file.highlight[1]].len) + "\n" +
+                        app.current_file.lines[app.current_file.highlight[1] + 1 .. app.current_file.edit[1]].join_lines() + "\n" +
+                        app.current_file.lines[app.current_file.edit[1]].substr(0, app.current_file.edit[0])
+                    )
+                }
+            }
+        }
+    }
     if (key == gg.KeyCode.v) && (mod == gg.Modifier.ctrl){
+        mut val := app.cb.paste()
+        mut new_lines := val.count("\n")
         if app.current_file.highlight[0] >= 0 {
             // To be implemented
         }
         else {
-            println(app.cb.paste())
-            app.current_file.lines[app.current_file.edit[1]] = app.current_file.lines[app.current_file.edit[1]].substr(0, app.current_file.edit[0]) + app.cb.paste() + app.current_file.lines[app.current_file.edit[1]].substr(app.current_file.edit[0], app.current_file.lines[app.current_file.edit[1]].len)
+            if val.contains("\n") {
+                app.current_file.lines[app.current_file.edit[1]] = app.current_file.lines[app.current_file.edit[1]].substr(0, app.current_file.edit[0]) + val.substr(0, val.index("\n") or {0}) + app.current_file.lines[app.current_file.edit[1]].substr(app.current_file.edit[0], app.current_file.lines[app.current_file.edit[1]].len)
+                app.current_file.lines.insert(app.current_file.edit[1] + 1, val.substr(val.index("\n") or {0} + 1, val.len).split("\n"))
+                app.current_file.edit[0] += app.current_file.lines[app.current_file.edit[1] + new_lines].len
+                app.current_file.edit[1] += new_lines
+            } else {
+                app.current_file.lines[app.current_file.edit[1]] = app.current_file.lines[app.current_file.edit[1]].substr(0, app.current_file.edit[0]) + val + app.current_file.lines[app.current_file.edit[1]].substr(app.current_file.edit[0], app.current_file.lines[app.current_file.edit[1]].len)
+                app.current_file.edit[0] += val.len
+            }
             vlang.parse(1.0, mut app.current_file)
         }
     }
@@ -402,6 +484,27 @@ fn render(mut app &App){
         if !app.current_file.read_only{
             if app.ctx.frame % 60 > 29 {
                 app.ctx.draw_line(app.current_file.edit[0] * 13 + 1 - app.current_file.shift[0], app.current_file.edit[1] * 30 - app.current_file.shift[1], app.current_file.edit[0] * 13 + 1  - app.current_file.shift[0], app.current_file.edit[1] * 30 + 28 - app.current_file.shift[1], gx.white)
+            }
+            if app.current_file.highlight[0] != -1 {
+                if app.current_file.highlight[1] == app.current_file.edit[1] {
+                    app.ctx.draw_rect_filled(app.current_file.highlight[0] * 13 - app.current_file.shift[0], app.current_file.highlight[1] * 30 - app.current_file.shift[1], (app.current_file.edit[0] - app.current_file.highlight[0]) * 13 + 1 - app.current_file.shift[0], 30, gx.rgba(200, 200, 255, 128))
+                } 
+                else {
+                    if app.current_file.highlight[1] > app.current_file.edit[1] {
+                        app.ctx.draw_rect_filled(app.current_file.shift[0], app.current_file.highlight[1] * 30 - app.current_file.shift[1], app.current_file.highlight[0] * 13 + 1 - app.current_file.shift[0], 30, gx.rgba(200, 200, 255, 128))
+                        for row in 1 .. app.current_file.highlight[1] - app.current_file.edit[1] {
+                            app.ctx.draw_rect_filled(app.current_file.shift[0], (app.current_file.edit[1] + row) * 30 - app.current_file.shift[1], app.current_file.lines[app.current_file.edit[1] + row].len * 13 - app.current_file.shift[0], 30, gx.rgba(200, 200, 255, 128))
+                        }
+                        app.ctx.draw_rect_filled(app.current_file.edit[0] * 13 - app.current_file.shift[0], app.current_file.edit[1] * 30 - app.current_file.shift[1], (app.current_file.lines[app.current_file.edit[1]].len - app.current_file.edit[0]) * 13 - app.current_file.shift[0], 30, gx.rgba(200, 200, 255, 128))
+                    }
+                    else {
+                        app.ctx.draw_rect_filled(app.current_file.highlight[0] * 13 - app.current_file.shift[0], app.current_file.highlight[1] * 30 - app.current_file.shift[1], (app.current_file.lines[app.current_file.highlight[1]].len - app.current_file.highlight[0]) * 13 - app.current_file.shift[0], 30, gx.rgba(200, 200, 255, 128))
+                        for row in 1 .. app.current_file.edit[1] - app.current_file.highlight[1] {
+                            app.ctx.draw_rect_filled(app.current_file.shift[0], (app.current_file.highlight[1] + row) * 30 - app.current_file.shift[1], app.current_file.lines[app.current_file.highlight[1] + row].len * 13 - app.current_file.shift[0], 30, gx.rgba(200, 200, 255, 128))
+                        }
+                        app.ctx.draw_rect_filled(app.current_file.shift[0], app.current_file.edit[1] * 30 - app.current_file.shift[1], app.current_file.edit[0] * 13 + 1 - app.current_file.shift[0], 30, gx.rgba(200, 200, 255, 128))
+                    }
+                }
             }
         }
     }
