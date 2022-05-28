@@ -28,8 +28,8 @@ To do:
   - [x] More efficient rendering
   - [x] Horizontal scroll capping
   - [x] Text cursor following
-  - [ ] Text highlighting
-  - [ ] Copy/Paste
+  - [ ] Text highlighting (partial)
+  - [ ] Copy/Paste (internal and partial)
   - [ ] Add bottom bar for save state and row+col info
   - [ ] Argument launching
   - [ ] Add word by word "hopping"
